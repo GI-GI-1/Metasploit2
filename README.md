@@ -234,3 +234,104 @@ Analysing the output from Nmap we can see that we have some ways to break in.
 
 **Which is what I will try to do for the first time, I usually go for the 1st method**
 
+### Enumeration 
+
+Since we have all the ports of the device , we taking reconnaisance a step further. We first will check the port running a webserver.
+
+The ports : 
+
+    80/tcp    open  http        Apache httpd 2.2.8 ((Ubuntu) DAV/2)
+    |_http-title: Metasploitable2 - Linux
+    |_http-server-header: Apache/2.2.8 (Ubuntu) DAV/2
+
+    513/tcp   open  login?
+
+    8180/tcp  open  http        Apache Tomcat/Coyote JSP engine 1.1
+    |_http-server-header: Apache-Coyote/1.1
+    |_http-favicon: Apache Tomcat
+    |_http-title: Apache Tomcat/5.5
+
+    52037/tcp open  status      1 (RPC #100024)
+
+    56051/tcp open  mountd      1-3 (RPC #100005)
+
+I will start the enumeration from here. Now not all of the services are HTTP as i said but i got curious and put some other that i didnt know what are for. 
+
+**The 80 port**
+
+    Running Apache httpd
+
+    Opened the IP on firefox on my VM and a page like this opens:
+
+![alt text](/assets/image.png)
+
+We are not going to jump into exploiting yet. But will map these endpoints:
+
+    TWiki
+    phpMyAdmin
+    Mutillidae
+    DVWA
+    WebDAV
+
+* Did a subenum for the domain. Here is what `ffuf` gave out. 
+
+
+        ffuf -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://192.168.1.14/FUZZ -t 200 -e .php,.html,.txt,.sql,.bak,.db,.xml,.config,.git 
+
+        /'___\  /'___\           /'___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+        ________________________________________________
+
+         :: Method           : GET
+         :: URL              : http://192.168.1.14/FUZZ
+         :: Wordlist         : FUZZ: /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+         :: Extensions       : .php .html .txt .sql .bak .db .xml .config .git 
+         :: Follow redirects : false
+         :: Calibration      : false
+         :: Timeout          : 10
+        :: Threads          : 200
+         :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+        ________________________________________________
+
+
+        tikiwiki                [Status: 301, Size: 320, Words: 21, Lines: 10, Duration: 16ms]
+        .html                   [Status: 403, Size: 290, Words: 22, Lines: 11, Duration: 1ms]
+        [Status: 200, Size: 891, Words: 237, Lines: 30, Duration: 399ms]
+        phpinfo                 [Status: 200, Size: 48029, Words: 2409, Lines: 657, Duration: 579ms]
+        phpinfo.php             [Status: 200, Size: 48041, Words: 2409, Lines: 657, Duration: 610ms]
+        server-status           [Status: 403, Size: 298, Words: 22, Lines: 11, Duration: 50ms]
+        phpMyAdmin              [Status: 301, Size: 322, Words: 21, Lines: 10, Duration: 7ms]
+        test                    [Status: 301, Size: 316, Words: 21, Lines: 10, Duration: 9ms]
+
+Now as u see some of these are from the list before, so i wont touch them. But what i will do is check what the rest of these have.
+
+* tikiwiki:
+![alt text](/assets/tikiwiki.png)
+
+* test:
+![alt text](./assets/test.png)
+Here was only 1 subdir so i opnened it and this was the final destination.
+
+**The port 8180** 
+
+Just entered the port and this is the page that was shown to me:
+![alt text](/assets/8180.png)
+
+* Did enumeration on this and we have :
+                
+        manager                 [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 2002ms]
+                
+        webdav                  [Status: 200, Size: 1775, Words: 75, Lines: 31, Duration: 521ms]
+                
+        /                       [Status: 200, Size: 8692, Words: 2370, Lines: 235, Duration: 64ms]
+                
+        RELEASE-NOTES.txt       [Status: 200, Size: 7498, Words: 948, Lines: 197, Duration: 107ms]
+
+Honestly after checking each of these ( except for the webdav ) didnt find anything worth working. Might enum again each of the dirs to see if there is anything at all.
+
