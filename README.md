@@ -335,3 +335,8 @@ Just entered the port and this is the page that was shown to me:
 
 Honestly after checking each of these ( except for the webdav ) didnt find anything worth working. Might enum again each of the dirs to see if there is anything at all.
 
+* The enumeration will continue as i work with what i got. 
+
+    For now we will be focusing in port 80 and its contents. The full breakdown of port 80 is in the directory:
+        
+    [Directory](./Port80)
